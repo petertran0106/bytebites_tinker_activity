@@ -1,0 +1,3 @@
+# Summary for Tinker Activity
+
+My prompt involved 5 candidate classes rather than 4; I included a class for Restaurants that relates to all the other classes (Customers, FoodCatergories, FoodItems, Orders). Copilot was able to make these relationships between the Restaurants class and the other classes, even when there was little information in the Client Feature Request. In addition, there was a computeTotal() function in the Orders class. No core features or attributes were missing.
