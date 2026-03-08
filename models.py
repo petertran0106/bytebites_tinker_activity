@@ -143,11 +143,17 @@ class Order:
         self.items = [l for l in self.items if l.food_item != food_item]
         self.touch()
 
-    def compute_total(self) -> Decimal:
-        total = Decimal("0.00")
+    def compute_total(self, tax_rate: Decimal = Decimal("0.00")) -> Decimal:
+        # Compute order subtotal from OrderLine entries and apply optional tax_rate (e.g., Decimal("0.08") for 8%).
+        subtotal = Decimal("0.00")
         for line in self.items:
-            total += line.line_total()
-        return total
+            subtotal += line.line_total()
+        if not isinstance(tax_rate, Decimal):
+            tax_rate = Decimal(str(tax_rate))
+        if tax_rate < Decimal("0"):
+            raise ValueError("tax_rate must be non-negative")
+        tax = (subtotal * tax_rate).quantize(Decimal("0.01"))
+        return (subtotal + tax)
 
     def set_status(self, new_status: OrderStatus) -> None:
         if not isinstance(new_status, OrderStatus):
@@ -188,8 +194,12 @@ class Restaurant:
         return new_cat
 
     def get_items_by_category(self, category_name: str) -> List[FoodItem]:
+        # Return a list of FoodItem objects in the named category (case-insensitive).
+        if not category_name or not category_name.strip():
+            return []
+        target = category_name.strip().lower()
         for c in self.categories:
-            if c.name == category_name:
+            if c.name.strip().lower() == target:
                 return c.list_items()
         return []
 
@@ -206,3 +216,15 @@ class Restaurant:
         self.orders.append(order)
         customer.add_purchase(order)
         return order
+    
+    def get_menu_sorted(self, by: str = "price", reverse: bool = False) -> List[FoodItem]:
+        # Return a new list of menu items sorted by 'price', 'name', or 'popularity'.
+        key = by.strip().lower() if by else "price"
+        if key == "price":
+            return sorted(self.menu, key=lambda i: i.price, reverse=reverse)
+        if key == "name":
+            return sorted(self.menu, key=lambda i: i.name.lower(), reverse=reverse)
+        if key in ("popularity", "rating"):
+            return sorted(self.menu, key=lambda i: i.popularity_rating, reverse=reverse)
+        # fallback to price if unknown key
+        return sorted(self.menu, key=lambda i: i.price, reverse=reverse)
